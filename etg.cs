@@ -27,21 +27,33 @@ struct Coords {
     }
 }
 
+/* Contains a 2d array of Locations */
 class Level {
     public Level() {
+
     }
 }
 
+/* Contains entity objects */
 class Location {
     public Location() {
+    
     }
 }
+
+/* Inheritence class from location to represent the exit location in the level. 
+Should print the messages about the gate and key according to the reference executable */
 
 abstract class Entity {
     public virtual  void look() {}
     public abstract void interact(Player player);
 }
 
+/* Use inheritence and polymorphism to create classes for keys, loot, and skeletons
+Should inherit from the entity class and implement the missing functionalities, look & interact */
+
+
+/* Encapsulation should be used. The player class should hold the players location and be responsible for updating it */
 class Player {
     public Coords coords { get; set; }
 
@@ -73,6 +85,8 @@ class Game {
 
     public void load(string path) {
         this.level = new Level();
+        Console.WriteLine(path);
+        Console.WriteLine("\n");
 
         string line;
         using (StreamReader reader = new StreamReader(path)) {
@@ -97,18 +111,23 @@ class Game {
                 switch (split[0]) {
                     case "size":
                         // Set the level's size to x by y
+                        /* Create the 2d array of locations with x & y */
                         break;
                     case "exit":
                         // Set the level's exit location to be x, y
+                        /* creat the exit location */
                         break;
                     case "key":
                         // Add a key to location x, y
+                        /* Key locations */
                         break;
                     case "loot":
                         // Add loot to location x, y with count coins
+                        /* Create loot locations */
                         break;
                     case "skeleton":
                         // Add a skeleton to location x, y
+                        /* Create skeleton locations */
                         break;
                     default:
                         Console.WriteLine($"Bad command in level file: '{line}'");
@@ -124,6 +143,8 @@ class Game {
         this.num_turns += 1;
 
         // Check for exhaustion?
+        /* Check if this.num_turns == the size (w*h*2) of the map */
+        /* This is from the level part of the input file */
 
         Console.WriteLine("================================================================");
 
