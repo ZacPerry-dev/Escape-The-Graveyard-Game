@@ -258,6 +258,7 @@ class Game {
                 if (this.level.arr[new_coords.x, new_coords.y] is ExitLocation) {
                     this.level.arr[new_coords.x, new_coords.y].print();
                 }
+                /* If the locations entity list is not empty, it will loop through and determine what is at this location */
                 else if ( this.level.arr[new_coords.x, new_coords.y].eList.Count != 0) {
                     Console.WriteLine(this.level.arr[new_coords.x, new_coords.y]);
                    for (int i = 0; i < this.level.arr[new_coords.x, new_coords.y].eList.Count; i++) {
