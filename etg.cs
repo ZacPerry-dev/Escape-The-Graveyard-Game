@@ -166,25 +166,24 @@ class Game {
                         break;
 
                     case "exit":
-                        // Set the level's exit location to be x, y
+                        
+                        // Creates a new exitLocation 
+                        // Will store within the level array 
                         this.ExitLocation = new ExitLocation(x,y, this.level);
                         this.level.arr[x,y] = this.ExitLocation;
                         Console.WriteLine("Exit location in array: " + this.level.arr[x,y] + "\n");
                         break;
 
                     case "key":
-                        // Add a key to location x, y
-                        /* Key locations */
+                        // Create a key entity and add it to the location at the specific x,y
                         break;
 
                     case "loot":
-                        // Add loot to location x, y with count coins
-                        /* Create loot locations */
+                        // Create a loot entity and add location x, y with count coins
                         break;
 
                     case "skeleton":
-                        // Add a skeleton to location x, y
-                        /* Create skeleton locations */
+                        // Create a skeleton entity and add to the location at x,y
                         break;
 
                     default:
@@ -237,6 +236,9 @@ class Game {
             case "go":
                 this.player.coords = new_coords;
                 // Need to look at the new location and interact with it.
+                // go to the specific location within the arr at the given cords
+                // Loop through the entities and display messages, etc
+                // Change player location
                 break;
             case "look":
                 // Need to look at the location.
@@ -255,6 +257,9 @@ class Game {
 
     bool is_over() {
         // What are the exit conditions?
+        // Either reached exit with key
+        // Exhaustion 
+        // Encountered skele
         return false;
     }
 
