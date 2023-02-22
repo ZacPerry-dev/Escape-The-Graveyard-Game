@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Collections.Generic;
 
 /* TODO: 
 - Get the correct entities created 
@@ -48,6 +49,7 @@ class Level {
         for (int i = 0; i < this.x; i++) {
             for (int j = 0; j < this.y; j++) {
                 this.arr[i,j] = new Location();
+                this.arr[i,j].eList = new List<Entity>();
             }
         }
     }
@@ -56,12 +58,12 @@ class Level {
 /* Contains entity objects */
 class Location {
 
-    Entity e;
+    public List<Entity> eList; 
 
     public Location() {
     }
 
-    public virtual void print(int x, int y){}
+    public virtual void print(){}
 }
 
 class ExitLocation : Location {
@@ -70,6 +72,10 @@ class ExitLocation : Location {
 
     public ExitLocation(int x, int y, Level level){
         this.level = level;
+    }
+
+    public override void print() {
+        Console.WriteLine("That looks like the gate out of this spooky place!");
     }
     
 }
@@ -86,7 +92,7 @@ abstract class Entity {
 /* Use inheritence and polymorphism to create classes for keys, loot, and skeletons
 Should inherit from the entity class and implement the missing functionalities, look & interact */
 
-class Keys : Entity {
+class Key : Entity {
     public override void look() {}
     public override void interact(Player player){}
 }
@@ -171,11 +177,13 @@ class Game {
                         // Will store within the level array 
                         this.ExitLocation = new ExitLocation(x,y, this.level);
                         this.level.arr[x,y] = this.ExitLocation;
-                        Console.WriteLine("Exit location in array: " + this.level.arr[x,y] + "\n");
                         break;
 
                     case "key":
                         // Create a key entity and add it to the location at the specific x,y
+                        // Go to this location within the array and add the key entite to this locations 
+                        Key key = new Key();
+                        this.level.arr[x,y].eList.Add(key);
                         break;
 
                     case "loot":
@@ -247,7 +255,19 @@ class Game {
               
                 Console.WriteLine("Coords: " + this.level.arr[new_coords.x, new_coords.y]);
                 /* Call print for the specific location at the specific coords */
-                if (this.level.arr[new_coords.x, new_coords.y] is ExitLocation) {Console.WriteLine("POGGGGGERRRRS");}
+                if (this.level.arr[new_coords.x, new_coords.y] is ExitLocation) {
+                    this.level.arr[new_coords.x, new_coords.y].print();
+                }
+                else if ( this.level.arr[new_coords.x, new_coords.y].eList.Count != 0) {
+                    Console.WriteLine(this.level.arr[new_coords.x, new_coords.y]);
+                   for (int i = 0; i < this.level.arr[new_coords.x, new_coords.y].eList.Count; i++) {
+                    if (this.level.arr[new_coords.x, new_coords.y].eList[i] is Key) {
+                        Console.WriteLine("Key here!");
+                        
+                    }
+                    
+                   }
+                }
                 break;
             default:
                 Console.WriteLine($"Bad command in input: '{line}'");
