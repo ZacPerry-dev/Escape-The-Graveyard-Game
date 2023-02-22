@@ -1,6 +1,12 @@
 using System;
 using System.IO;
 
+/* TODO: 
+- Get the correct entities created 
+- Add them to their specific location somehow (that way, you can have more than one entity at a location )
+*/
+
+
 struct Coords {
     public int x;
     public int y;
@@ -29,17 +35,45 @@ struct Coords {
 
 /* Contains a 2d array of Locations */
 class Level {
-    public Level() {
+    
+    public Location location {get; set;}
+    public Location [,] arr; /* Array of locations */
+    public int x; 
+    public int y;
 
+    public Level(int x, int y) {
+        this.arr = new Location[x, y];
+        this.x = x;
+        this.y = y;
+        for (int i = 0; i < this.x; i++) {
+            for (int j = 0; j < this.y; j++) {
+                this.arr[i,j] = new Location();
+            }
+        }
     }
 }
 
 /* Contains entity objects */
 class Location {
+
+    Entity e;
+
     public Location() {
-    
     }
+
+    public virtual void print(int x, int y){}
 }
+
+class ExitLocation : Location {
+
+    Level level;
+
+    public ExitLocation(int x, int y, Level level){
+        this.level = level;
+    }
+    
+}
+
 
 /* Inheritence class from location to represent the exit location in the level. 
 Should print the messages about the gate and key according to the reference executable */
@@ -52,10 +86,26 @@ abstract class Entity {
 /* Use inheritence and polymorphism to create classes for keys, loot, and skeletons
 Should inherit from the entity class and implement the missing functionalities, look & interact */
 
+class Keys : Entity {
+    public override void look() {}
+    public override void interact(Player player){}
+}
+
+class Loot : Entity {
+    public override void look() {}
+    public override void interact(Player player){}
+}
+
+class Skeletons : Entity {
+    public override void look() {}
+    public override void interact(Player player){}
+}
+
 
 /* Encapsulation should be used. The player class should hold the players location and be responsible for updating it */
 class Player {
     public Coords coords { get; set; }
+    public Location location {get; set;}
 
     public Player() {
         this.coords = new Coords(0, 0);
@@ -77,6 +127,7 @@ class Player {
 class Game {
     int    num_turns;
     Level  level;
+    Location ExitLocation;
     public Player player { get; }
 
     public Game() {
@@ -84,7 +135,6 @@ class Game {
     }
 
     public void load(string path) {
-        this.level = new Level();
         Console.WriteLine(path);
         Console.WriteLine("\n");
 
@@ -112,23 +162,31 @@ class Game {
                     case "size":
                         // Set the level's size to x by y
                         /* Create the 2d array of locations with x & y */
+                        this.level = new Level(x, y);
                         break;
+
                     case "exit":
                         // Set the level's exit location to be x, y
-                        /* creat the exit location */
+                        this.ExitLocation = new ExitLocation(x,y, this.level);
+                        this.level.arr[x,y] = this.ExitLocation;
+                        Console.WriteLine("Exit location in array: " + this.level.arr[x,y] + "\n");
                         break;
+
                     case "key":
                         // Add a key to location x, y
                         /* Key locations */
                         break;
+
                     case "loot":
                         // Add loot to location x, y with count coins
                         /* Create loot locations */
                         break;
+
                     case "skeleton":
                         // Add a skeleton to location x, y
                         /* Create skeleton locations */
                         break;
+
                     default:
                         Console.WriteLine($"Bad command in level file: '{line}'");
                         Environment.Exit(1);
@@ -182,6 +240,12 @@ class Game {
                 break;
             case "look":
                 // Need to look at the location.
+                /* Will look and see what is at that location by looping through the array */
+                /* Depending on what is there, we will print the specific prompt based on the entity at this location */
+              
+                Console.WriteLine("Coords: " + this.level.arr[new_coords.x, new_coords.y]);
+                /* Call print for the specific location at the specific coords */
+                if (this.level.arr[new_coords.x, new_coords.y] is ExitLocation) {Console.WriteLine("POGGGGGERRRRS");}
                 break;
             default:
                 Console.WriteLine($"Bad command in input: '{line}'");
