@@ -2,9 +2,18 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 
-/* TODO: 
-- Get the correct entities created 
-- Add them to their specific location somehow (that way, you can have more than one entity at a location )
+/* TODO:
+- Get the correct entities created
+    - Implement their functions
+
+- Have program call these entity look & interact functions to print stuff / decide state of game
+
+- Move player around (set coordinates / location)
+
+- Add logic for ending the game
+
+- Could still use list logic for storing the entities? 
+    - May make some of the future logic easier
 */
 
 
@@ -49,7 +58,7 @@ class Level {
         for (int i = 0; i < this.x; i++) {
             for (int j = 0; j < this.y; j++) {
                 this.arr[i,j] = new Location();
-                this.arr[i,j].eList = new List<Entity>();
+                // this.arr[i,j].eList = new List<Entity>();
             }
         }
     }
@@ -58,10 +67,10 @@ class Level {
 /* Contains entity objects */
 class Location {
 
-    public List<Entity> eList; 
+    public Key key;
+    public Loot loot;
 
-    public Location() {
-    }
+    public Location() {}
 
     public virtual void print(){}
 }
@@ -93,12 +102,20 @@ abstract class Entity {
 Should inherit from the entity class and implement the missing functionalities, look & interact */
 
 class Key : Entity {
-    public override void look() {}
-    public override void interact(Player player){}
+    public override void look() {
+        Console.WriteLine("You see a key on the ground! Might need that to get out of here...");
+        
+    }
+    public override void interact(Player player){
+        player.has_key = true;
+        Console.WriteLine("You picked up a key!");
+    }
 }
 
 class Loot : Entity {
-    public override void look() {}
+    public override void look() {
+        Console.WriteLine("You see what looks like the corner of a treasure chest poking out of the ground.");
+    }
     public override void interact(Player player){}
 }
 
@@ -112,6 +129,7 @@ class Skeletons : Entity {
 class Player {
     public Coords coords { get; set; }
     public Location location {get; set;}
+    public bool has_key { get; set;}
 
     public Player() {
         this.coords = new Coords(0, 0);
@@ -123,7 +141,7 @@ class Player {
 
     public bool is_alive() { return true; }
 
-    public bool has_key() { return false; }
+    // public bool has_key() { return false; }
 
     public void print_stats() {
         Console.WriteLine($"  LOCATION: {this.coords.x}, {this.coords.y}");
@@ -182,12 +200,15 @@ class Game {
                     case "key":
                         // Create a key entity and add it to the location at the specific x,y
                         // Go to this location within the array and add the key entite to this locations 
-                        Key key = new Key();
-                        this.level.arr[x,y].eList.Add(key);
+                        // Key key = new Key();
+                        // this.level.arr[x,y].eList.Add(key);
+                        
+                        this.level.arr[x,y].key = new Key();
                         break;
 
                     case "loot":
                         // Create a loot entity and add location x, y with count coins
+                        this.level.arr[x,y].loot = new Loot();
                         break;
 
                     case "skeleton":
@@ -247,27 +268,41 @@ class Game {
                 // go to the specific location within the arr at the given cords
                 // Loop through the entities and display messages, etc
                 // Change player location
+
+                // If this location has akey, call look and interact, give the player the key, 
+                // and remove the key from the location
+                if (this.level.arr[new_coords.x, new_coords.y].key != null) {
+                    this.level.arr[new_coords.x, new_coords.y].key.look();
+                    this.level.arr[new_coords.x, new_coords.y].key.interact(this.player);
+                    Console.WriteLine("Key value: " + this.player.has_key);
+                    this.level.arr[new_coords.x, new_coords.y].key = null;
+                }
+
+
                 break;
             case "look":
                 // Need to look at the location.
-                /* Will look and see what is at that location by looping through the array */
+                // Looks to see if the location has an entity (key, loot, or skele)
+                // Otherwise, looks to see if it is the exit or if there is nothing 
                 /* Depending on what is there, we will print the specific prompt based on the entity at this location */
               
-                Console.WriteLine("Coords: " + this.level.arr[new_coords.x, new_coords.y]);
+                //Console.WriteLine("Coords: " + this.level.arr[new_coords.x, new_coords.y]);
                 /* Call print for the specific location at the specific coords */
+                /* If the locations entity list is not empty, it will loop through and determine what is at this location */
+                if (this.level.arr[new_coords.x, new_coords.y].key != null) {
+                    this.level.arr[new_coords.x, new_coords.y].key.look();
+                }
+                
+                if (this.level.arr[new_coords.x, new_coords.y].loot != null) {
+                    this.level.arr[new_coords.x, new_coords.y].loot.look();
+                }
+
                 if (this.level.arr[new_coords.x, new_coords.y] is ExitLocation) {
                     this.level.arr[new_coords.x, new_coords.y].print();
                 }
-                /* If the locations entity list is not empty, it will loop through and determine what is at this location */
-                else if ( this.level.arr[new_coords.x, new_coords.y].eList.Count != 0) {
-                    Console.WriteLine(this.level.arr[new_coords.x, new_coords.y]);
-                   for (int i = 0; i < this.level.arr[new_coords.x, new_coords.y].eList.Count; i++) {
-                    if (this.level.arr[new_coords.x, new_coords.y].eList[i] is Key) {
-                        Console.WriteLine("Key here!");
-                        
-                    }
-                    
-                   }
+                else if (this.level.arr[new_coords.x, new_coords.y].loot == null && 
+                this.level.arr[new_coords.x, new_coords.y].key == null) {
+                    Console.WriteLine("Nothing here.");
                 }
                 break;
             default:
