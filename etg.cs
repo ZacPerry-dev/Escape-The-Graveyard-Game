@@ -3,17 +3,15 @@ using System.IO;
 using System.Collections.Generic;
 
 /* TODO:
-- Get the correct entities created
-    - Implement their functions
-
-- Have program call these entity look & interact functions to print stuff / decide state of game
-
 - Move player around (set coordinates / location)
 
-- Add logic for ending the game
+- Refactor
+- Make sure everything is OOP 
+- Convert some logic and make it less gross
 
-- Could still use list logic for storing the entities? 
-    - May make some of the future logic easier
+- NOTE: ALways break if at the gate and you dont have key -> Otherwise, it will try to read
+into Loot list for the exit location (it doesn't have one)
+
 */
 
 
@@ -58,7 +56,7 @@ class Level {
         for (int i = 0; i < this.x; i++) {
             for (int j = 0; j < this.y; j++) {
                 this.arr[i,j] = new Location();
-                // this.arr[i,j].eList = new List<Entity>();
+                this.arr[i,j].loot = new List<Loot>();
             }
         }
     }
@@ -66,9 +64,10 @@ class Level {
 
 /* Contains entity objects */
 class Location {
-
     public Key key;
-    public Loot loot;
+   // public Loot loot;
+    public List<Loot> loot;
+    public Skeleton skeleton;
 
     public Location() {}
 
@@ -76,16 +75,18 @@ class Location {
 }
 
 class ExitLocation : Location {
+    public Coords coords { get; set; }
+    
 
-    Level level;
-
-    public ExitLocation(int x, int y, Level level){
-        this.level = level;
+    public ExitLocation(int x, int y){
+        this.coords = new Coords(x, y);
+        
     }
 
     public override void print() {
         Console.WriteLine("That looks like the gate out of this spooky place!");
     }
+    /* Implement a look and interact method here seperate from the entity shit */
     
 }
 
@@ -113,15 +114,38 @@ class Key : Entity {
 }
 
 class Loot : Entity {
+    public int coins{get; set;}
+    public bool looted{get;set;}
+
     public override void look() {
-        Console.WriteLine("You see what looks like the corner of a treasure chest poking out of the ground.");
+        if (!this.looted) {
+            Console.WriteLine("You see what looks like the corner of a treasure chest poking out of the ground.");
+        }
+        else {
+            Console.WriteLine($"A treasure chest sits already opened.");
+        }
     }
-    public override void interact(Player player){}
+    public override void interact(Player player){
+        if (!this.looted) {
+            player.has_loot = true; 
+            player.number_of_coins += this.coins;
+            Console.WriteLine("You open the chest and find " + this.coins + " coins!");
+        }
+        else {
+            Console.WriteLine($"The chest is empty...");
+        }
+    }
 }
 
-class Skeletons : Entity {
-    public override void look() {}
-    public override void interact(Player player){}
+class Skeleton : Entity {
+    public override void look() {
+        Console.WriteLine("Not much to see here.");
+    }
+    public override void interact(Player player){
+        /* Kill player and print shit ig */
+        player.is_dead = true; 
+        Console.WriteLine("A bony arm juts out of the ground and grabs your ankle!\nYou've been dragged six feet under by a skeleton.");
+    }
 }
 
 
@@ -129,7 +153,10 @@ class Skeletons : Entity {
 class Player {
     public Coords coords { get; set; }
     public Location location {get; set;}
+    public bool is_dead{ get; set;}
     public bool has_key { get; set;}
+    public bool has_loot { get; set;}
+    public int number_of_coins{get; set;}
 
     public Player() {
         this.coords = new Coords(0, 0);
@@ -139,12 +166,15 @@ class Player {
         return this.coords == xy;
     }
 
-    public bool is_alive() { return true; }
+    // public bool is_alive{ get; set;}
 
     // public bool has_key() { return false; }
 
     public void print_stats() {
         Console.WriteLine($"  LOCATION: {this.coords.x}, {this.coords.y}");
+        Console.WriteLine($"  COINS:    {this.number_of_coins}");
+        Console.WriteLine($"  KEY:      {this.has_key}");
+        Console.WriteLine($"  DEAD:     {this.is_dead}");
     }
 }
 
@@ -156,12 +186,13 @@ class Game {
 
     public Game() {
         this.player = new Player();
+        this.player.is_dead = false; 
+        this.player.has_key = false; 
+        this.player.has_loot = false; 
+        this.player.number_of_coins = 0;
     }
 
     public void load(string path) {
-        Console.WriteLine(path);
-        Console.WriteLine("\n");
-
         string line;
         using (StreamReader reader = new StreamReader(path)) {
             while ((line = reader.ReadLine()) != null) {
@@ -190,29 +221,30 @@ class Game {
                         break;
 
                     case "exit":
-                        
                         // Creates a new exitLocation 
                         // Will store within the level array 
-                        this.ExitLocation = new ExitLocation(x,y, this.level);
+                        this.ExitLocation = new ExitLocation(x, y);
                         this.level.arr[x,y] = this.ExitLocation;
                         break;
 
                     case "key":
                         // Create a key entity and add it to the location at the specific x,y
-                        // Go to this location within the array and add the key entite to this locations 
-                        // Key key = new Key();
-                        // this.level.arr[x,y].eList.Add(key);
-                        
+                        // Go to this location within the array and add the key entite to this locations                         
                         this.level.arr[x,y].key = new Key();
                         break;
 
                     case "loot":
                         // Create a loot entity and add location x, y with count coins
-                        this.level.arr[x,y].loot = new Loot();
+                        Loot loot = new Loot();
+                        loot.coins = count;
+                        loot.looted = false;
+                        this.level.arr[x,y].loot.Add(loot);
+                        // this.level.arr[x,y].loot.coins = count;
                         break;
 
                     case "skeleton":
                         // Create a skeleton entity and add to the location at x,y
+                        this.level.arr[x,y].skeleton = new Skeleton();
                         break;
 
                     default:
@@ -231,6 +263,12 @@ class Game {
         // Check for exhaustion?
         /* Check if this.num_turns == the size (w*h*2) of the map */
         /* This is from the level part of the input file */
+        if (this.is_over()) {
+            this.player.is_dead = true;
+            Console.WriteLine($"You have died from exhaustion.");
+            this.exit_if_over();
+            
+        }
 
         Console.WriteLine("================================================================");
 
@@ -263,7 +301,15 @@ class Game {
         // Are the new coords valid?
         switch (split[0]) {
             case "go":
+                if (new_coords.x < 0 || new_coords.y < 0 || new_coords.x > this.level.x - 1 || new_coords.y > this.level.y - 1) {
+                    Console.WriteLine($"A towering wall is before you. This must be the edge of the graveyard.");
+                    break;
+                }
                 this.player.coords = new_coords;
+                bool yes_key = false;
+                bool yes_loot = false;
+                bool yes_skeleton = false;
+                
                 // Need to look at the new location and interact with it.
                 // go to the specific location within the arr at the given cords
                 // Loop through the entities and display messages, etc
@@ -271,38 +317,115 @@ class Game {
 
                 // If this location has akey, call look and interact, give the player the key, 
                 // and remove the key from the location
-                if (this.level.arr[new_coords.x, new_coords.y].key != null) {
-                    this.level.arr[new_coords.x, new_coords.y].key.look();
-                    this.level.arr[new_coords.x, new_coords.y].key.interact(this.player);
-                    Console.WriteLine("Key value: " + this.player.has_key);
-                    this.level.arr[new_coords.x, new_coords.y].key = null;
+
+               
+                
+                if (this.level.arr[new_coords.x, new_coords.y] is ExitLocation) {
+                    this.level.arr[new_coords.x, new_coords.y].print();
+                    this.player.location = this.level.arr[new_coords.x, new_coords.y];
+                    if (this.player.has_key) {
+                        Console.WriteLine($"You open the gate with your key!");
+                        this.exit_if_over();
+                    }
+                    else {
+                        Console.WriteLine($"You try to open the gate, but it's locked. Must need a key...");
+                        break;
+                    }                                       
                 }
 
+                
+                if (this.level.arr[new_coords.x, new_coords.y].key != null) {
+                    this.level.arr[new_coords.x, new_coords.y].key.look();
+                    yes_key = true;
+                }
 
+               
+                
+               if (this.level.arr[new_coords.x, new_coords.y].loot.Count != 0 && 
+               !(this.level.arr[new_coords.x, new_coords.y] is ExitLocation)) {
+                    // this.level.arr[new_coords.x, new_coords.y].loot.look();
+                    foreach (var item in  this.level.arr[new_coords.x, new_coords.y].loot) 
+                    {
+                        item.look();
+                    }
+                    yes_loot = true;
+                }
+
+                if (this.level.arr[new_coords.x, new_coords.y].skeleton != null) {
+                    if (!yes_key && !yes_loot) {
+                        this.level.arr[new_coords.x, new_coords.y].skeleton.look();
+                        yes_skeleton = true;
+                    } else {
+                        yes_skeleton = true;
+                    }
+                }
+
+                
+
+                
+                if (yes_key) {
+                     this.level.arr[new_coords.x, new_coords.y].key.interact(this.player);
+                    this.level.arr[new_coords.x, new_coords.y].key = null;
+                }
+                if (yes_loot) {
+                    // this.level.arr[new_coords.x, new_coords.y].loot.interact(this.player);
+                    // this.level.arr[new_coords.x, new_coords.y].loot.looted = true;
+                     foreach (var item in  this.level.arr[new_coords.x, new_coords.y].loot) 
+                    {
+                        item.interact(this.player);
+                        item.looted = true;
+                    }
+                }
+
+                if (yes_skeleton) {
+                    this.level.arr[new_coords.x, new_coords.y].skeleton.interact(this.player);
+                    this.exit_if_over();
+                }
+
+                if (!yes_key && !yes_loot && !yes_skeleton) {
+                    Console.WriteLine($"Not much to see here.");
+                    
+                }
+
+                
                 break;
             case "look":
+            if (new_coords.x < 0 || new_coords.y < 0 || new_coords.x > this.level.x - 1 || new_coords.y > this.level.y - 1) {
+                    Console.WriteLine($"A towering wall is before you. This must be the edge of the graveyard.");
+                    break;
+                }
                 // Need to look at the location.
                 // Looks to see if the location has an entity (key, loot, or skele)
                 // Otherwise, looks to see if it is the exit or if there is nothing 
                 /* Depending on what is there, we will print the specific prompt based on the entity at this location */
-              
-                //Console.WriteLine("Coords: " + this.level.arr[new_coords.x, new_coords.y]);
                 /* Call print for the specific location at the specific coords */
                 /* If the locations entity list is not empty, it will loop through and determine what is at this location */
+
+                if (this.level.arr[new_coords.x, new_coords.y] is ExitLocation) {
+                    this.level.arr[new_coords.x, new_coords.y].print();
+                    break;
+                }
+                
                 if (this.level.arr[new_coords.x, new_coords.y].key != null) {
                     this.level.arr[new_coords.x, new_coords.y].key.look();
                 }
                 
-                if (this.level.arr[new_coords.x, new_coords.y].loot != null) {
-                    this.level.arr[new_coords.x, new_coords.y].loot.look();
+
+                 if (this.level.arr[new_coords.x, new_coords.y].loot.Count != 0 && 
+                 !(this.level.arr[new_coords.x, new_coords.y] is ExitLocation)) {
+                    // this.level.arr[new_coords.x, new_coords.y].loot.look();
+                    foreach (var item in  this.level.arr[new_coords.x, new_coords.y].loot) 
+                    {
+                        item.look();
+                    }
+                    
                 }
 
-                if (this.level.arr[new_coords.x, new_coords.y] is ExitLocation) {
-                    this.level.arr[new_coords.x, new_coords.y].print();
-                }
-                else if (this.level.arr[new_coords.x, new_coords.y].loot == null && 
-                this.level.arr[new_coords.x, new_coords.y].key == null) {
-                    Console.WriteLine("Nothing here.");
+               
+               
+                else if (this.level.arr[new_coords.x, new_coords.y].loot.Count == 0 && 
+                this.level.arr[new_coords.x, new_coords.y].key == null ) {
+                    Console.WriteLine("Not much to see here.");
                 }
                 break;
             default:
@@ -312,15 +435,21 @@ class Game {
     }
 
     bool is_over() {
-        // What are the exit conditions?
-        // Either reached exit with key
-        // Exhaustion 
-        // Encountered skele
+       
+        // Reached Exit with key
+        if (this.player.has_key && this.player.location is ExitLocation) return true;
+        
+        //Exahusted
+        else if (this.num_turns > (2*this.level.x*this.level.y)) return true;
+        
+        // Encountered skeleton
+        else if (this.player.is_dead == true) return true;
+
         return false;
     }
 
     void print_stats() {
-        if (this.is_over() && player.is_alive()) {
+        if (this.is_over() && !player.is_dead) {
             Console.WriteLine("You successfully escaped the graveyard!");
         } else {
             Console.WriteLine("You did not escape the graveyard. GAME OVER");
@@ -343,6 +472,7 @@ class Game {
         Console.WriteLine("You awake in a daze to find yourself alone in the dead of night, surrounded by headstones...");
         Console.WriteLine("You must escape this graveyard.");
         Console.WriteLine("================================================================");
+        Console.WriteLine($"Not much to see here.");
         // Look at the current location.
         Console.Write($"{this.player.coords.x}, {this.player.coords.y}> ");
     }
