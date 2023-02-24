@@ -14,7 +14,6 @@ into Loot list for the exit location (it doesn't have one)
 
 */
 
-
 struct Coords {
     public int x;
     public int y;
@@ -65,7 +64,6 @@ class Level {
 /* Contains entity objects */
 class Location {
     public Key key;
-   // public Loot loot;
     public List<Loot> loot;
     public Skeleton skeleton;
 
@@ -79,15 +77,14 @@ class ExitLocation : Location {
     
 
     public ExitLocation(int x, int y){
-        this.coords = new Coords(x, y);
-        
+        this.coords = new Coords(x, y); 
     }
 
     public override void print() {
         Console.WriteLine("That looks like the gate out of this spooky place!");
     }
-    /* Implement a look and interact method here seperate from the entity shit */
-    
+
+    /* Refactor: Provide look and interact for this maybe -> would be ez and clean */    
 }
 
 
@@ -165,10 +162,6 @@ class Player {
     public bool is_at(Coords xy) {
         return this.coords == xy;
     }
-
-    // public bool is_alive{ get; set;}
-
-    // public bool has_key() { return false; }
 
     public void print_stats() {
         Console.WriteLine($"  LOCATION: {this.coords.x}, {this.coords.y}");
@@ -318,8 +311,6 @@ class Game {
                 // If this location has akey, call look and interact, give the player the key, 
                 // and remove the key from the location
 
-               
-                
                 if (this.level.arr[new_coords.x, new_coords.y] is ExitLocation) {
                     this.level.arr[new_coords.x, new_coords.y].print();
                     this.player.location = this.level.arr[new_coords.x, new_coords.y];
