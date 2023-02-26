@@ -11,7 +11,6 @@ using System.Collections.Generic;
 
 - NOTE: ALways break if at the gate and you dont have key -> Otherwise, it will try to read
 into Loot list for the exit location (it doesn't have one)
-
 */
 
 struct Coords {
@@ -68,18 +67,15 @@ class Location {
     public Skeleton skeleton;
 
     public Location() {}
-
     public virtual void print(){}
 }
 
 class ExitLocation : Location {
     public Coords coords { get; set; }
     
-
     public ExitLocation(int x, int y){
         this.coords = new Coords(x, y); 
     }
-
     public override void print() {
         Console.WriteLine("That looks like the gate out of this spooky place!");
     }
@@ -244,7 +240,6 @@ class Game {
                         Console.WriteLine($"Bad command in level file: '{line}'");
                         Environment.Exit(1);
                         break;
-
                 }
             }
         }
@@ -253,14 +248,11 @@ class Game {
     public void input(string line) {
         this.num_turns += 1;
 
-        // Check for exhaustion?
-        /* Check if this.num_turns == the size (w*h*2) of the map */
-        /* This is from the level part of the input file */
+        // Check for exhaustion 
         if (this.is_over()) {
             this.player.is_dead = true;
             Console.WriteLine($"You have died from exhaustion.");
             this.exit_if_over();
-            
         }
 
         Console.WriteLine("================================================================");
@@ -294,23 +286,20 @@ class Game {
         // Are the new coords valid?
         switch (split[0]) {
             case "go":
+                
+                /* Check if the coords are in bounds and valid */
                 if (new_coords.x < 0 || new_coords.y < 0 || new_coords.x > this.level.x - 1 || new_coords.y > this.level.y - 1) {
                     Console.WriteLine($"A towering wall is before you. This must be the edge of the graveyard.");
                     break;
                 }
+
+                /* Set cords and booleans to detect items */
                 this.player.coords = new_coords;
                 bool yes_key = false;
                 bool yes_loot = false;
                 bool yes_skeleton = false;
-                
-                // Need to look at the new location and interact with it.
-                // go to the specific location within the arr at the given cords
-                // Loop through the entities and display messages, etc
-                // Change player location
 
-                // If this location has akey, call look and interact, give the player the key, 
-                // and remove the key from the location
-
+                /* If at the exit... */
                 if (this.level.arr[new_coords.x, new_coords.y] is ExitLocation) {
                     this.level.arr[new_coords.x, new_coords.y].print();
                     this.player.location = this.level.arr[new_coords.x, new_coords.y];
@@ -324,16 +313,16 @@ class Game {
                     }                                       
                 }
 
-                
+                /* If there is a key.. */
                 if (this.level.arr[new_coords.x, new_coords.y].key != null) {
                     this.level.arr[new_coords.x, new_coords.y].key.look();
                     yes_key = true;
                 }
 
                
-                
-               if (this.level.arr[new_coords.x, new_coords.y].loot.Count != 0 && 
-               !(this.level.arr[new_coords.x, new_coords.y] is ExitLocation)) {
+                /* If there is loot and you are not at the exit */
+                if (this.level.arr[new_coords.x, new_coords.y].loot.Count != 0 && 
+                !(this.level.arr[new_coords.x, new_coords.y] is ExitLocation)) {
                     // this.level.arr[new_coords.x, new_coords.y].loot.look();
                     foreach (var item in  this.level.arr[new_coords.x, new_coords.y].loot) 
                     {
@@ -342,6 +331,7 @@ class Game {
                     yes_loot = true;
                 }
 
+                /* If there is a skeleton */
                 if (this.level.arr[new_coords.x, new_coords.y].skeleton != null) {
                     if (!yes_key && !yes_loot) {
                         this.level.arr[new_coords.x, new_coords.y].skeleton.look();
@@ -349,11 +339,9 @@ class Game {
                     } else {
                         yes_skeleton = true;
                     }
-                }
+                }                
 
-                
-
-                
+                /* Call interact if certain things exist */
                 if (yes_key) {
                      this.level.arr[new_coords.x, new_coords.y].key.interact(this.player);
                     this.level.arr[new_coords.x, new_coords.y].key = null;
@@ -367,53 +355,44 @@ class Game {
                         item.looted = true;
                     }
                 }
-
                 if (yes_skeleton) {
                     this.level.arr[new_coords.x, new_coords.y].skeleton.interact(this.player);
                     this.exit_if_over();
                 }
-
                 if (!yes_key && !yes_loot && !yes_skeleton) {
                     Console.WriteLine($"Not much to see here.");
                     
                 }
-
-                
                 break;
             case "look":
-            if (new_coords.x < 0 || new_coords.y < 0 || new_coords.x > this.level.x - 1 || new_coords.y > this.level.y - 1) {
+
+                /* check bounds */
+                if (new_coords.x < 0 || new_coords.y < 0 || new_coords.x > this.level.x - 1 || new_coords.y > this.level.y - 1) {
                     Console.WriteLine($"A towering wall is before you. This must be the edge of the graveyard.");
                     break;
                 }
-                // Need to look at the location.
-                // Looks to see if the location has an entity (key, loot, or skele)
-                // Otherwise, looks to see if it is the exit or if there is nothing 
-                /* Depending on what is there, we will print the specific prompt based on the entity at this location */
-                /* Call print for the specific location at the specific coords */
-                /* If the locations entity list is not empty, it will loop through and determine what is at this location */
 
+                /* If an exit location */
                 if (this.level.arr[new_coords.x, new_coords.y] is ExitLocation) {
                     this.level.arr[new_coords.x, new_coords.y].print();
                     break;
                 }
                 
+                /* If the locations has a key */
                 if (this.level.arr[new_coords.x, new_coords.y].key != null) {
                     this.level.arr[new_coords.x, new_coords.y].key.look();
                 }
                 
-
-                 if (this.level.arr[new_coords.x, new_coords.y].loot.Count != 0 && 
-                 !(this.level.arr[new_coords.x, new_coords.y] is ExitLocation)) {
-                    // this.level.arr[new_coords.x, new_coords.y].loot.look();
+                /* If not the exit and the location has loot */
+                if (this.level.arr[new_coords.x, new_coords.y].loot.Count != 0 && 
+                !(this.level.arr[new_coords.x, new_coords.y] is ExitLocation)) {
                     foreach (var item in  this.level.arr[new_coords.x, new_coords.y].loot) 
                     {
                         item.look();
-                    }
-                    
+                    } 
                 }
-
-               
-               
+                
+                /* If nothing there... */
                 else if (this.level.arr[new_coords.x, new_coords.y].loot.Count == 0 && 
                 this.level.arr[new_coords.x, new_coords.y].key == null ) {
                     Console.WriteLine("Not much to see here.");
@@ -430,7 +409,7 @@ class Game {
         // Reached Exit with key
         if (this.player.has_key && this.player.location is ExitLocation) return true;
         
-        //Exahusted
+        // Exhausted
         else if (this.num_turns > (2*this.level.x*this.level.y)) return true;
         
         // Encountered skeleton
